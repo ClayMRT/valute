@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Currency Pro</title>
+<title>Currency Pro Fix</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -22,21 +22,15 @@
   --btn: #2563eb;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: Arial;
-}
-
 body {
+  margin: 0;
+  font-family: Arial;
   background: var(--bg);
   color: var(--text);
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  transition: 0.3s;
 }
 
 .container {
@@ -44,36 +38,20 @@ body {
   padding: 20px;
   border-radius: 20px;
   background: var(--card);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
 }
 
-h1 {
-  text-align: center;
-  margin-bottom: 10px;
-}
-
-.top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+input, select, button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 10px;
+  border: none;
 }
 
 button {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 10px;
   background: var(--btn);
   color: white;
   cursor: pointer;
-}
-
-input, select {
-  width: 100%;
-  padding: 10px;
-  margin-top: 8px;
-  border-radius: 10px;
-  border: none;
 }
 
 .result {
@@ -90,27 +68,28 @@ canvas {
 <body>
 
 <div class="container">
-  <div class="top">
-    <h1>💱 Currency Pro</h1>
-    <button onclick="toggleTheme()">🌓</button>
-  </div>
 
-  <input type="number" id="amount" placeholder="Сумма"/>
+<h2>💱 Currency Pro (FIXED)</h2>
 
-  <select id="from"></select>
-  <select id="to"></select>
+<button onclick="toggleTheme()">🌓 Тема</button>
 
-  <button onclick="convert()">Конвертировать</button>
+<input type="number" id="amount" placeholder="Сумма">
 
-  <div class="result" id="result"></div>
+<select id="from"></select>
+<select id="to"></select>
 
-  <canvas id="chart"></canvas>
+<button onclick="convert()">Конвертировать</button>
+
+<div class="result" id="result">Введите данные</div>
+
+<canvas id="chart"></canvas>
+
 </div>
 
 <script>
 const api = "https://api.frankfurter.app";
 
-const currencies = ["USD","EUR","RUB","KZT","GBP","JPY","CNY","TRY","CHF","CAD"];
+const currencies = ["USD","EUR","RUB","KZT","GBP","JPY","CNY","CHF"];
 
 const from = document.getElementById("from");
 const to = document.getElementById("to");
@@ -123,63 +102,81 @@ currencies.forEach(c => {
 from.value = "KZT";
 to.value = "USD";
 
-let chart;
+let chart = null;
 
-function toggleTheme() {
+function toggleTheme(){
   document.body.classList.toggle("light");
 }
 
 async function convert() {
   let amount = document.getElementById("amount").value;
+
+  if (!amount || amount <= 0) {
+    document.getElementById("result").innerText = "Введи нормальную сумму";
+    return;
+  }
+
   let f = from.value;
   let t = to.value;
 
-  let res = await fetch(`${api}/latest?amount=${amount}&from=${f}&to=${t}`);
-  let data = await res.json();
+  try {
+    const res = await fetch(`${api}/latest?amount=${amount}&from=${f}&to=${t}`);
+    const data = await res.json();
 
-  let value = data.rates[t];
+    if (!data.rates || !data.rates[t]) {
+      throw new Error("No rate");
+    }
 
-  document.getElementById("result").innerHTML =
-    `${amount} ${f} = <b>${value.toFixed(2)} ${t}</b>`;
+    let value = data.rates[t];
 
-  drawChart(f, t);
+    document.getElementById("result").innerHTML =
+      `${amount} ${f} = <b>${value.toFixed(2)} ${t}</b>`;
+
+    drawChart(f, t);
+
+  } catch (e) {
+    document.getElementById("result").innerText =
+      "Ошибка API. Попробуй позже или проверь интернет.";
+    console.log(e);
+  }
 }
 
-// 📊 график за 7 дней
-async function drawChart(fromCur, toCur) {
-  let labels = [];
-  let values = [];
+async function drawChart(f, t) {
+  try {
+    let labels = [];
+    let values = [];
 
-  let today = new Date();
+    for (let i = 7; i >= 1; i--) {
+      let d = new Date();
+      d.setDate(d.getDate() - i);
+      let date = d.toISOString().split("T")[0];
 
-  for (let i = 7; i >= 1; i--) {
-    let d = new Date();
-    d.setDate(today.getDate() - i);
-    let date = d.toISOString().split("T")[0];
+      const res = await fetch(`${api}/${date}?from=${f}&to=${t}`);
+      const data = await res.json();
 
-    let res = await fetch(`${api}/${date}?from=${fromCur}&to=${toCur}`);
-    let data = await res.json();
-
-    labels.push(date);
-    values.push(data.rates[toCur]);
-  }
-
-  if (chart) chart.destroy();
-
-  const ctx = document.getElementById("chart");
-
-  chart = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels,
-      datasets: [{
-        label: `${fromCur} → ${toCur}`,
-        data: values,
-        borderWidth: 2,
-        tension: 0.3
-      }]
+      if (data.rates && data.rates[t]) {
+        labels.push(date);
+        values.push(data.rates[t]);
+      }
     }
-  });
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(document.getElementById("chart"), {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          label: `${f} → ${t}`,
+          data: values,
+          borderWidth: 2
+        }]
+      }
+    });
+
+  } catch (e) {
+    console.log("Chart error:", e);
+  }
 }
 </script>
 
