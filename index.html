@@ -3,16 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Конвертер валют</title>
+<title>Currency Pro Graph</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 :root {
-  --bg: linear-gradient(135deg, #0f172a, #1e293b, #0ea5e9);
+  --bg: linear-gradient(135deg, #0f172a, #1e293b);
   --card: rgba(255,255,255,0.08);
   --text: white;
   --input: rgba(255,255,255,0.12);
-  --option-bg: #0f172a;
-  --option-text: white;
+  --btn: #0ea5e9;
 }
 
 .light {
@@ -20,8 +21,7 @@
   --card: white;
   --text: #0f172a;
   --input: #f1f5f9;
-  --option-bg: white;
-  --option-text: #0f172a;
+  --btn: #2563eb;
 }
 
 * {
@@ -32,21 +32,21 @@
 }
 
 body {
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
   background: var(--bg);
   transition: 0.3s;
+  padding: 20px;
 }
 
 .container {
-  width: 380px;
+  width: 520px;
   padding: 25px;
   border-radius: 20px;
   background: var(--card);
   backdrop-filter: blur(15px);
-  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
   color: var(--text);
   text-align: center;
 }
@@ -55,43 +55,43 @@ h1 {
   margin-bottom: 10px;
 }
 
-button {
-  margin-bottom: 10px;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 10px;
-  background: #0ea5e9;
-  color: white;
-  cursor: pointer;
-}
-
 input, select {
   width: 100%;
   padding: 12px;
   margin-top: 10px;
-  border: none;
   border-radius: 12px;
-  outline: none;
+  border: none;
   background: var(--input);
   color: var(--text);
 }
 
-/* 🔥 ВАЖНО: фикс dropdown */
-select {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
+button {
+  margin-top: 10px;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  background: var(--btn);
+  color: white;
+  cursor: pointer;
+  width: 100%;
 }
 
-/* 🔥 ВАЖНО: список валют */
-option {
-  background: var(--option-bg);
-  color: var(--option-text);
+.row {
+  display: flex;
+  gap: 10px;
+}
+
+.smallbtn {
+  width: 50%;
 }
 
 .result {
   margin-top: 15px;
   font-size: 18px;
+}
+
+canvas {
+  margin-top: 20px;
 }
 </style>
 </head>
@@ -100,42 +100,64 @@ option {
 
 <div class="container">
 
-<button onclick="toggleTheme()">🌙 / ☀️ Тема</button>
+<h1>💱 Currency Pro</h1>
 
-<h1>💱 Конвертер валют</h1>
+<button onclick="toggleTheme()">🌙 / ☀️ Тема</button>
 
 <input type="number" id="amount" placeholder="Сумма" oninput="convert()" />
 
-<select id="from" onchange="convert()">
-  <option value="KZT">KZT</option>
-  <option value="USD">USD</option>
-  <option value="EUR">EUR</option>
-  <option value="RUB">RUB</option>
-</select>
+<div class="row">
+  <select id="from" onchange="convert()">
+    <option>USD</option>
+    <option>EUR</option>
+    <option>RUB</option>
+    <option>KZT</option>
+  </select>
 
-<select id="to" onchange="convert()">
-  <option value="USD">USD</option>
-  <option value="EUR">EUR</option>
-  <option value="RUB">RUB</option>
-  <option value="KZT">KZT</option>
-</select>
+  <select id="to" onchange="convert()">
+    <option>EUR</option>
+    <option>USD</option>
+    <option>RUB</option>
+    <option>KZT</option>
+  </select>
+</div>
+
+<button onclick="swap()">🔁 Swap валюты</button>
 
 <div class="result" id="result">Введите данные</div>
+
+<canvas id="chart"></canvas>
 
 </div>
 
 <script>
 
-// базовые курсы (относительно KZT)
-const rates = {
+const api = "https://api.frankfurter.app";
+
+let chart;
+
+// фикс база через KZT (упрощённая модель)
+const baseRates = {
   KZT: 1,
   USD: 0.00216,
   EUR: 0.00185,
   RUB: 0.19
 };
 
+// 🔁 swap валют
+function swap() {
+  let from = document.getElementById("from");
+  let to = document.getElementById("to");
+
+  [from.value, to.value] = [to.value, from.value];
+
+  convert();
+  drawChart();
+}
+
+// 💱 конвертация
 function convert() {
-  let amount = parseFloat(document.getElementById("amount").value);
+  let amount = +document.getElementById("amount").value;
   let from = document.getElementById("from").value;
   let to = document.getElementById("to").value;
 
@@ -144,16 +166,60 @@ function convert() {
     return;
   }
 
-  let inKZT = amount / rates[from];
-  let result = inKZT * rates[to];
+  let inKZT = amount / baseRates[from];
+  let result = inKZT * baseRates[to];
 
   document.getElementById("result").innerHTML =
     `${amount} ${from} = <b>${result.toFixed(2)} ${to}</b>`;
 }
 
+// 📈 график за 7 дней
+async function drawChart() {
+  let from = document.getElementById("from").value;
+  let to = document.getElementById("to").value;
+
+  let labels = [];
+  let values = [];
+
+  for (let i = 7; i >= 1; i--) {
+    let d = new Date();
+    d.setDate(d.getDate() - i);
+    let date = d.toISOString().split("T")[0];
+
+    try {
+      let res = await fetch(`${api}/${date}?from=${from}&to=${to}`);
+      let data = await res.json();
+
+      labels.push(date);
+      values.push(data.rates[to]);
+    } catch (e) {
+      labels.push(date);
+      values.push(null);
+    }
+  }
+
+  if (chart) chart.destroy();
+
+  chart = new Chart(document.getElementById("chart"), {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label: `${from} → ${to}`,
+        data: values,
+        borderWidth: 2,
+        tension: 0.3
+      }]
+    }
+  });
+}
+
 function toggleTheme() {
   document.body.classList.toggle("light");
 }
+
+convert();
+drawChart();
 
 </script>
 
