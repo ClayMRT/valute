@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Конвертер валют KZT</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #0f172a, #1e293b, #0ea5e9);
+}
+
+.container {
+  width: 380px;
+  padding: 25px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(15px);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+  color: white;
+  text-align: center;
+  animation: fadeIn 0.8s ease;
+}
+
+@keyframes fadeIn {
+  from {opacity: 0; transform: translateY(20px);}
+  to {opacity: 1; transform: translateY(0);}
+}
+
+h1 {
+  font-size: 22px;
+  margin-bottom: 15px;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border: none;
+  border-radius: 12px;
+  outline: none;
+  font-size: 16px;
+}
+
+.result {
+  margin-top: 15px;
+  text-align: left;
+}
+
+.card {
+  background: rgba(255,255,255,0.1);
+  padding: 10px;
+  margin-top: 8px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.small {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-top: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h1>💱 Конвертер KZT</h1>
+
+  <input type="number" id="kzt" placeholder="Введите сумму в тенге" oninput="convert()" />
+
+  <div class="result">
+    <div class="card">
+      <span>USD 🇺🇸</span>
+      <span id="usd">0</span>
+    </div>
+
+    <div class="card">
+      <span>EUR 🇪🇺</span>
+      <span id="eur">0</span>
+    </div>
+
+    <div class="card">
+      <span>RUB 🇷🇺</span>
+      <span id="rub">0</span>
+    </div>
+  </div>
+
+  <div class="small">
+    Курсы примерные (можешь потом подключить API)
+  </div>
+</div>
+
+<script>
+// 💰 примерные реальные курсы
+const rates = {
+  usd: 0.00216,   // 1 KZT → USD
+  eur: 0.00185,   // 1 KZT → EUR
+  rub: 0.19       // 1 KZT → RUB
+};
+
+function convert() {
+  let kzt = document.getElementById("kzt").value;
+
+  document.getElementById("usd").innerText = (kzt * rates.usd).toFixed(2);
+  document.getElementById("eur").innerText = (kzt * rates.eur).toFixed(2);
+  document.getElementById("rub").innerText = (kzt * rates.rub).toFixed(2);
+}
+</script>
+
+</body>
+</html>
