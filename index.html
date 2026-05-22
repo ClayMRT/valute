@@ -32,17 +32,16 @@
 }
 
 body {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
   background: var(--bg);
   transition: 0.3s;
-  padding: 20px;
 }
 
 .container {
-  width: 420px;
+  width: 380px;
   padding: 25px;
   border-radius: 20px;
   background: var(--card);
@@ -77,6 +76,14 @@ input, select {
   color: var(--text);
 }
 
+/* 🔥 ВАЖНО: фикс dropdown */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+/* 🔥 ВАЖНО: список валют */
 option {
   background: var(--option-bg);
   color: var(--option-text);
@@ -85,26 +92,6 @@ option {
 .result {
   margin-top: 15px;
   font-size: 18px;
-}
-
-/* 📊 таблица */
-table {
-  width: 100%;
-  margin-top: 20px;
-  border-collapse: collapse;
-  overflow: hidden;
-  border-radius: 12px;
-}
-
-th, td {
-  padding: 10px;
-  border-bottom: 1px solid rgba(255,255,255,0.2);
-  font-size: 14px;
-}
-
-th {
-  text-align: left;
-  opacity: 0.8;
 }
 </style>
 </head>
@@ -135,23 +122,11 @@ th {
 
 <div class="result" id="result">Введите данные</div>
 
-<!-- 📊 ТАБЛИЦА -->
-<table>
-  <thead>
-    <tr>
-      <th>Валюта</th>
-      <th>Курс к KZT</th>
-    </tr>
-  </thead>
-  <tbody id="ratesTable"></tbody>
-</table>
-
 </div>
 
 <script>
 
-const api = "https://api.frankfurter.app/latest?from=KZT";
-
+// базовые курсы (относительно KZT)
 const rates = {
   KZT: 1,
   USD: 0.00216,
@@ -176,38 +151,9 @@ function convert() {
     `${amount} ${from} = <b>${result.toFixed(2)} ${to}</b>`;
 }
 
-// 📡 загрузка реальных курсов
-async function loadRates() {
-  try {
-    let res = await fetch(api);
-    let data = await res.json();
-
-    let table = document.getElementById("ratesTable");
-    table.innerHTML = "";
-
-    let currencies = ["USD","EUR","RUB"];
-
-    currencies.forEach(cur => {
-      let value = data.rates[cur];
-
-      table.innerHTML += `
-        <tr>
-          <td>${cur}</td>
-          <td>${value ? value.toFixed(4) : "—"}</td>
-        </tr>
-      `;
-    });
-
-  } catch (e) {
-    console.log("Ошибка загрузки курсов");
-  }
-}
-
 function toggleTheme() {
   document.body.classList.toggle("light");
 }
-
-loadRates();
 
 </script>
 
