@@ -11,7 +11,8 @@
   --card: rgba(255,255,255,0.08);
   --text: white;
   --input: rgba(255,255,255,0.12);
-  --btn: #0ea5e9;
+  --option-bg: #0f172a;
+  --option-text: white;
 }
 
 .light {
@@ -19,7 +20,8 @@
   --card: white;
   --text: #0f172a;
   --input: #f1f5f9;
-  --btn: #2563eb;
+  --option-bg: white;
+  --option-text: #0f172a;
 }
 
 * {
@@ -58,7 +60,7 @@ button {
   padding: 8px 12px;
   border: none;
   border-radius: 10px;
-  background: var(--btn);
+  background: #0ea5e9;
   color: white;
   cursor: pointer;
 }
@@ -74,11 +76,17 @@ input, select {
   color: var(--text);
 }
 
-.swap {
-  margin-top: 10px;
-  cursor: pointer;
-  background: transparent;
-  border: 1px solid var(--text);
+/* 🔥 ВАЖНО: фикс dropdown */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+/* 🔥 ВАЖНО: список валют */
+option {
+  background: var(--option-bg);
+  color: var(--option-text);
 }
 
 .result {
@@ -112,15 +120,13 @@ input, select {
   <option value="KZT">KZT</option>
 </select>
 
-<button class="swap" onclick="swapCurrencies()">🔄 Поменять местами</button>
-
 <div class="result" id="result">Введите данные</div>
 
 </div>
 
 <script>
 
-// фиксированные курсы относительно KZT
+// базовые курсы (относительно KZT)
 const rates = {
   KZT: 1,
   USD: 0.00216,
@@ -138,25 +144,11 @@ function convert() {
     return;
   }
 
-  // перевод сначала в KZT
   let inKZT = amount / rates[from];
-
-  // затем в нужную валюту
   let result = inKZT * rates[to];
 
   document.getElementById("result").innerHTML =
     `${amount} ${from} = <b>${result.toFixed(2)} ${to}</b>`;
-}
-
-function swapCurrencies() {
-  let from = document.getElementById("from");
-  let to = document.getElementById("to");
-
-  let temp = from.value;
-  from.value = to.value;
-  to.value = temp;
-
-  convert();
 }
 
 function toggleTheme() {
